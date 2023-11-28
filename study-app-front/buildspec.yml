@@ -1,0 +1,27 @@
+# aws/codebuild/standard:6.0
+version: 0.2
+
+phases:
+  install:
+    # https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#runtime-versions-buildspec-file
+    runtime-versions:
+      nodejs: 16
+    commands:
+      - pip install --upgrade pip
+      - pip install --upgrade awscli
+      - ls -al
+      - echo move study-app-front directory
+      - cd study-app-front
+      - ls -al
+      - npm ci
+  pre_build:
+    commands:
+  build:
+    on-failure: ABORT
+    commands:
+      - npm run build:${BUILD_MODE}
+  post_build:
+    on-failure: ABORT
+    commands:
+      - aws s3 sync dist/front ${S3_BUCKET_URI} --delete
+      - aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths '/*'

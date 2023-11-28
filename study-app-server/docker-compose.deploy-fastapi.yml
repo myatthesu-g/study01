@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  fastapi:
+    image: XXXXXXXXX.dkr.ecr.${AWS_REGION}.amazonaws.com/study01-fastapi-${APPLICATION_ENV}
+    build:
+      dockerfile: ./scripts/fastapi/Dockerfile
+      context: ./
+      args:
+        - IMAGE_TAG=${IMAGE_TAG}

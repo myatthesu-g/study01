@@ -1,0 +1,23 @@
+# aws/codebuild/standard:2.0
+version: 0.2
+
+phases:
+  install:
+    # https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#runtime-versions-buildspec-file
+    runtime-versions:
+      python: 3.11
+  pre_build:
+    commands:
+      - pip install --upgrade boto3
+      - python --version && pip show boto3
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+  build:
+    on-failure: ABORT
+    commands:
+      - echo change directory server
+      - cd study-app-server
+      - echo check directory
+      - pwd
+      - echo Build started on `date`
+      - echo db:migrate on ECS...
+      - python ./scripts/run_command_on_ecs.py --image-tag ${IMAGE_TAG} --env ${ENV} --aws-region ${AWS_DEFAULT_REGION} alembic upgrade head

@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  fastapi:
+    build: ./fastapi
+    read_only: true
+    volumes:
+      - ./fastapi/app:/app
+      - /root/.cache
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+    image: kakeai_study01/fastapi
+    container_name: kakeai_study01_fastapi
+    environment:
+      - ENV=local
+      - DB_HOST=db
+      - DB_HOST_REPLICATIONS=['db', 'db']
+      - DB_NAME=study01
+      - DB_PASSWORD=
+      - DB_USER=root
+      - DB_POOL_SIZE=10
+      - WEB_CONCURRENCY=2
+    networks:
+      - kakeai_study01_network
+  db:
+    image: mysql:8.0.23
+    ports:
+      - "3308:3306"
+    volumes:
+      - study01-db:/var/lib/mysql
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - kakeai_study01_network
+    command: mysqld --character-set-server=utf8mb4 --sql-mode=0 --default-authentication-plugin=mysql_native_password
+    cap_add:
+      - SYS_NICE
+volumes:
+  study01-db:
+networks:
+  kakeai_study01_network:

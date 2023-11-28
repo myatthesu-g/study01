@@ -1,0 +1,50 @@
+# aws/codebuild/standard:7.0
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - curl -sL https://sentry.io/get-cli/ | bash
+  pre_build:
+    commands:
+      - aws --version && python3 --version
+      - echo Logging in to Amazon ECR...
+      # - $(aws ecr get-login --no-include-email --region $AWS_REGION)
+      # aws-cliのバージョン2からは下記となる
+      - aws ecr get-login-password | docker login --username AWS --password-stdin https://XXXXXXXXX.dkr.ecr.$AWS_REGION.amazonaws.com
+      # docker-hubへもログインする
+      # https://docs.docker.com/docker-hub/download-rate-limit/
+      - echo '#YYYYYYYYYYY' | docker login --username username --password-stdin
+      - REPOSITORY_URI=XXXXXXXXX.dkr.ecr.$AWS_REGION.amazonaws.com/${IMAGE_NAME}
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - export IMAGE_TAG=${IMAGE_TAG}
+      - echo CODEBUILD_RESOLVED_SOURCE_VERSION = $CODEBUILD_RESOLVED_SOURCE_VERSION
+      - echo REPOSITORY_URI = ${REPOSITORY_URI}
+      - echo IMAGE_TAG = ${IMAGE_TAG}
+  build:
+    on-failure: ABORT
+    commands:
+      - ls -al
+      - cd study-app-server
+      - ls -al
+      - ls -al ./scripts
+      - ls -al ./scripts/fastapi
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - APPLICATION_ENV=${ENV} bash ./scripts/fastapi/build_fastapi.sh
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    on-failure: ABORT
+    commands:
+      - echo check directory
+      - pwd
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Change CodeBuild Source Directory For Write imagedefinitions.json
+      - cd ${CODEBUILD_SRC_DIR}
+      - echo Writing image definitions file...
+      - echo "[{\"name\":\"study01-fastapi\",\"imageUri\":\"${REPOSITORY_URI}:${IMAGE_TAG}\"}]" > imagedefinitions.json
+artifacts:
+  files: imagedefinitions.json
